@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+out/
+release/
+/release-*/
+*.tsbuildinfo
+
+# Rust outputs
+/native/target/
+/native/*.node
+/native/*.d.ts
+/native/*.js
+!/native/index.cjs
+Cargo.lock
+!/native/Cargo.lock
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Snow local state
+.snow/
+ROLE.md
+
+# Local scratch / investigation files
+.issue-body-cn-v2.md
+scripts/investigate_abort.py
+docs/code-review/
+/REMOTE_CONTROL_*.md
+/MOBILE_REMOTE_UI_REFACTOR_PLAN.md
+
+# Local-only regression helper (never track in git)
+scripts/e2e-verify-config.cjs
+
+# Local AI workflow tooling (excluded per user request)
+.trellis/
+.codex/
+.agents/
+.agent/
+AGENTS.md
+GEMINI.md
+.ace-tool/
+.codex-user-data/
+design-qa.md
+/codex/
+/claude-code-docs/
+/opencode/

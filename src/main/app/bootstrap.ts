@@ -1,0 +1,308 @@
+import {
+  app,
+  ipcMain,
+  Menu,
+  nativeImage,
+  nativeTheme,
+  powerMonitor,
+  session,
+} from "electron";
+import { APP_ICON_PATH, APP_USER_MODEL_ID, isMacOS } from "./constants";
+import { initializeApplicationServices } from "./applicationServices";
+import { createWindow, getMainWindow } from "./mainWindow";
+import { initTray } from "./tray";
+import { registerToggleWindowShortcut } from "./globalShortcuts";
+import { registerIpcHandlers } from "../ipc/registerIpcHandlers";
+import { native, getRawNative } from "../native/nativeBridge";
+import { installGuestViewErrorFilter } from "../utils/guestViewErrorFilter";
+import { snowLog } from "../../utils/snowLogger";
+import {
+  registerThemeBgProtocol,
+  registerThemeBgSchemePrivilege,
+} from "./themeBgProtocol";
+import {
+  registerImageProxyProtocol,
+  registerImageProxySchemePrivilege,
+} from "./imageProxyProtocol";
+import { applySessionProxy } from "./sessionProxy";
+import { ensureBuiltinDocs, ensureBuiltinSkills } from "./ensureBuiltinSkills";
+import {
+  initBrowserNetworkRecorder,
+  initBrowserWebviewRegistry,
+} from "../ipc/handlers/browserNetworkRecorder";
+import { installWebviewContextMenu } from "../utils/webviewContextMenu";
+import { installWebviewDownloadHandler } from "./downloadManager";
+import { initUserscriptSyncStore } from "./userscriptSyncStore";
+import { initBrowserPopupHandler } from "../browser/browserPopupWindow";
+import { disposePetWindow, restorePetWindow } from "../pets/petWindow";
+import { startScheduledTaskWakeup } from "./scheduledTaskWakeup";
+import {
+  startRemoteControlServer,
+  stopRemoteControlServer,
+} from "../remoteControl/remoteControlServer";
+import { remoteTunnelManager } from "../remoteControl/remoteTunnelManager";
+
+export const bootstrapApplication = (): void => {
+  // ─── Chromium 启动加速开关（必须在 whenReady 之前）─────────────────────
+  // 禁用不必要的 GPU 光栅化和合成特性检测，减少内核初始化耗时。
+  app.commandLine.appendSwitch(
+    "disable-features",
+    "CalculateNativeWinOcclusion",
+  );
+  // 跳过 GPU 沙箱预热（部分显卡驱动初始化极慢）。
+  app.commandLine.appendSwitch("disable-gpu-sandbox");
+  // 定时任务需要在后台持续运行。仅对主窗口关闭 Chromium 后台节流，避免
+  // 最小化/失焦后 renderer 的调度器和 IPC 事件被挂起；其他窗口和页面仍保留
+  // 默认后台节流策略。
+
+  snowLog.info({
+    module: "app/bootstrap",
+    func: "bootstrapApplication",
+    message: "Application bootstrap started",
+    context: `platform=${process.platform} electron=${process.versions.electron}`,
+  });
+
+  // registerSchemesAsPrivileged 必须在 app.whenReady() 之前调用，
+  // 否则 Chromium 不会允许在 CSS url() / <img src> 中加载 theme-bg:// 资源。
+  registerThemeBgSchemePrivilege();
+  // img-proxy:// 同样需要在 whenReady 前声明特权，才能用于 <img src>。
+  registerImageProxySchemePrivilege();
+
+  // Prevent multiple instances — must be called before app.whenReady().
+  const gotTheLock = app.requestSingleInstanceLock();
+  if (!gotTheLock) {
+    app.quit();
+    return;
+  }
+
+  app.on("second-instance", () => {
+    snowLog.info({
+      module: "app/bootstrap",
+      func: "second-instance",
+      message: "Second instance detected, focusing existing window",
+    });
+    // 使用 getMainWindow() 而非 getAllWindows()[0]：宠物窗口始终存在，
+    // getAllWindows()[0] 可能返回宠物窗口而非会话主窗口。
+    const existing = getMainWindow();
+    if (existing) {
+      if (existing.isMinimized()) {
+        existing.restore();
+      }
+      if (!existing.isVisible()) {
+        existing.show();
+      }
+      existing.focus();
+    }
+  });
+
+  // Install early, before any webview is created, so that expected
+  // GUEST_VIEW_MANAGER_CALL navigation-abort errors are filtered from logs.
+  installGuestViewErrorFilter();
+
+  app.name = "Snow App";
+
+  // Windows 上必须设置 AppUserModelID，否则系统通知会显示默认的
+  // "electron.app.Snow App" 包名形式，且无法正确归类到本应用。
+  // 需在 app.whenReady() 之前调用，保证 Notification 初始化时已生效。
+  app.setAppUserModelId(APP_USER_MODEL_ID);
+
+  app.whenReady().then(() => {
+    Menu.setApplicationMenu(null);
+    nativeTheme.themeSource = "system";
+
+    // 注册 theme-bg:// 自定义协议处理器，使渲染进程能加载本地背景图。
+    // 必须在 createWindow 之前调用，确保窗口加载时协议已就绪。
+    registerThemeBgProtocol();
+    // 注册 img-proxy:// 协议处理器：代理外部 http(s) 图片，并直接读取本地
+    // image/、upload/ 图片文件返回，使 markdown 图片能绕过 CSP 限制安全加载。
+    registerImageProxyProtocol(native);
+
+    if (isMacOS && app.dock) {
+      app.dock.setIcon(nativeImage.createFromPath(APP_ICON_PATH));
+    }
+
+    // ─── 内置浏览器 UA 统一为标准桌面 Chrome ─────────────────────────────
+    // Electron 默认 UA 在 "Chrome/…" 与 "Safari/537.36" 之间夹带
+    // "SnowApp/x.y.z" 与 "Electron/x.y.z" 非标准 token，知网等按标准
+    // 桌面浏览器 UA 识别客户端的网站会将其归入未知/移动设备，直接下发
+    // wap 移动版页面。移除两个 token 后与同版本 Chrome 完全一致；
+    // defaultSession 覆盖 webview、浏览器弹窗与独立浏览器窗口。
+    // 必须在 createWindow 之前设置，保证首个请求就携带新 UA。
+    session.defaultSession.setUserAgent(
+      app.userAgentFallback
+        .replace(/ [^/()]+\/[\w.-]+(?= Chrome\/)/, "")
+        .replace(/ Electron\/[\w.-]+/, ""),
+    );
+
+    // ─── 极速出窗口 ─────────────────────────────────────────────────────
+    // 第一优先级：创建窗口并加载 boot-loader HTML。
+    // 窗口使用 show:false + ready-to-show，确保用户看到的第一帧就是
+    // 完整的 loading 动画，而非空白/黑屏过渡。
+    const mainWindow = createWindow();
+
+    const stopScheduledTaskWakeup = startScheduledTaskWakeup(mainWindow);
+
+    // 宠物窗口生命周期绑定主窗口：主窗口关闭后一并销毁宠物，
+    // 避免 Windows 下悬浮宠物窗口残留导致进程无法退出。
+    mainWindow.on("closed", () => {
+      stopScheduledTaskWakeup();
+      disposePetWindow();
+    });
+
+    // 初始化系统托盘（黑白脱色图标 + 悬停快速信息 + 右键菜单）。
+    initTray(native);
+
+    // 注册显示/隐藏对话窗口的全局快捷键（toggleWindow，默认 mod+shift+h）。
+    // native 代理已做 storageReady 门控，会等待 storage 就绪后读取设置再注册。
+    void registerToggleWindowShortcut(native);
+
+    // 安装/同步内置 skills 与内置文档（供 snow-app-docs 技能阅读）：
+    // 首次安装、应用升级或开发模式下自动推送官方版本；内置 skill 的
+    // 用户启用/禁用开关会在同步时保留。
+    ensureBuiltinSkills();
+    ensureBuiltinDocs();
+
+    snowLog.info({
+      module: "app/bootstrap",
+      func: "whenReady",
+      message: "Application ready, main window created",
+    });
+
+    // IPC 注册放在窗口创建之后 — 渲染进程 boot-loader 阶段不需要 IPC，
+    // 等 React 挂载后才会发起 invoke 调用，此时注册早已完成。
+    registerIpcHandlers(native);
+    // 手机遥控服务是进程级单例；每次请求动态解析当前主窗口。
+    // 启动失败不会阻塞 Snow，完整配对 URL 仅输出到本机控制台。
+    void startRemoteControlServer().then((info) => {
+      if (info) {
+        void remoteTunnelManager.initialize().catch((error) => {
+          console.warn(
+            "[Snow Remote] 自动连接公网隧道失败：",
+            error instanceof Error ? error.message : String(error),
+          );
+        });
+      }
+    });
+    powerMonitor.on("resume", () => {
+      void remoteTunnelManager.reconnectAfterSystemResume().catch((error) => {
+        console.warn(
+          "[Snow Remote] 系统唤醒后重连公网隧道失败：",
+          error instanceof Error ? error.message : String(error),
+        );
+      });
+    });
+    // 用户脚本同步匹配缓存：必须在任何 webview 创建前注册 sendSync
+    // handler（webview preload 顶层同步调用，未注册会死锁渲染进程）。
+    initUserscriptSyncStore(native);
+
+    // 浏览器调试数据收集：网络请求记录 + JavaScript 弹窗捕获（幂等）。
+    // 需在 app ready 且 defaultSession 可用后初始化。
+    initBrowserNetworkRecorder();
+    initBrowserWebviewRegistry();
+    // 浏览器弹出窗口：webview 内 window.open / target=_blank 创建真实窗体
+    // （Google 登录等 OAuth 弹窗依赖 window.opener 关系，不能转交系统浏览器）。
+    initBrowserPopupHandler();
+    // 浏览器右键菜单：Electron webview 默认无右键菜单，需主进程手动弹出。
+    installWebviewContextMenu();
+    // webview 下载接管：无 will-download 监听器时 Electron 会静默取消下载，
+    // 使网页 a[download] / Blob 下载（含用户脚本 GM_download）全部失效。
+    installWebviewDownloadHandler();
+
+    // 渲染进程保存代理设置后通知主进程重新应用会话代理。
+    ipcMain.handle("proxy-browser-settings:apply", () =>
+      applySessionProxy(native),
+    );
+
+    // ─── 重型原生模块延迟到页面首帧绘制完成后加载 ─────────────────────────
+    // 40MB .node 文件的 require() 是同步阻塞操作。
+    // 等待 did-finish-load 确保 boot-loader HTML 已完成渲染，
+    // 用户已看到 loading 动画后再执行阻塞操作。
+    mainWindow.webContents.once("did-finish-load", () => {
+      // Initialise storage — use raw binding to avoid storageReady deadlock.
+      initializeApplicationServices(getRawNative())
+        .then(() => restorePetWindow(native))
+        .catch((error) => {
+          console.error("Failed to initialize application storage:", error);
+          snowLog.error({
+            module: "app/bootstrap",
+            func: "initializeApplicationServices",
+            message: "Failed to initialize application storage",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+
+      // 启动时应用会话代理，使 net.fetch / electron-updater 走内置代理配置。
+      void applySessionProxy(native);
+
+      // Apply persisted theme mode to nativeTheme as soon as storage is ready.
+      getRawNative()
+        .getThemeSettings()
+        .then((settings) => {
+          if (
+            settings.mode === "light" ||
+            settings.mode === "dark" ||
+            settings.mode === "system"
+          ) {
+            nativeTheme.themeSource = settings.mode;
+          }
+        })
+        .catch((error) => {
+          console.warn("Failed to apply persisted theme mode:", error);
+          snowLog.warn({
+            module: "app/bootstrap",
+            func: "applyThemeSettings",
+            message: "Failed to apply persisted theme mode",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+    });
+
+    app.on("activate", () => {
+      // macOS：点击 Dock 图标时，优先恢复已存在的主窗口（可能是最小化或
+      // hide-to-tray 隐藏状态）；主窗口不存在时才创建新窗口。
+      // 不能使用 getAllWindows().length 判断——宠物窗口始终存在，
+      // 会导致最小化/隐藏主窗口后点击 Dock 图标无法复原。
+      const existing = getMainWindow();
+      if (existing) {
+        if (existing.isMinimized()) {
+          existing.restore();
+        }
+        if (!existing.isVisible()) {
+          existing.show();
+        }
+        existing.focus();
+      } else {
+        createWindow();
+      }
+    });
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      snowLog.info({
+        module: "app/bootstrap",
+        func: "window-all-closed",
+        message: "All windows closed, quitting application",
+      });
+      app.quit();
+    }
+  });
+
+  // 退出前等待 frpc 子进程和含明文凭据的临时运行目录完成清理。
+  let remoteShutdownComplete = false;
+  let remoteShutdownPromise: Promise<void> | null = null;
+  app.on("before-quit", (event) => {
+    disposePetWindow();
+    if (remoteShutdownComplete) return;
+    event.preventDefault();
+    remoteShutdownPromise ??= Promise.all([
+      remoteTunnelManager.shutdown(),
+      stopRemoteControlServer(),
+    ])
+      .then(() => undefined)
+      .finally(() => {
+        remoteShutdownComplete = true;
+        app.quit();
+      });
+  });
+};
