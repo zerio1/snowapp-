@@ -1,192 +1,114 @@
-# Snow App
+# Snow App 手机远控版
 
-> [!WARNING] > **macOS Users:** If the app shows "damaged" or "cannot be opened" after installation, run the following command in Terminal:
->
-> ```bash
-> sudo xattr -rd com.apple.quarantine /Applications/Snow\ App.app
-> ```
->
-> You will be prompted to enter your login password to remove the quarantine attribute.
+> 在电脑上运行 Snow App，用手机浏览器安全地查看并操控同一个 AI 会话。无需安装手机 App；局域网扫码即用，也支持通过自己的服务器和域名建立 HTTPS 公网入口。
 
-> High-performance cross-platform desktop application powered by Electron, React, TypeScript, and Rust.
+[下载最新版](https://github.com/zerio1/snowapp-/releases/latest) · [中文完整说明](./README_zh.md) · [手机公网远控指南](./docs/zh-CN/2-使用指南/23-手机公网远控.md)
 
-[中文文档](./README_zh.md)
+## 这是什么
 
-## Origin and usage notice
+Snow App 手机远控把桌面 Snow 已有的会话能力安全地延伸到手机浏览器：
 
-This repository is a Snow App derivative based on [MayDay-wpf/snow-app](https://github.com/MayDay-wpf/snow-app) and its MIT-licensed architecture. Its mobile remote-control experience references and reproduces ideas from **GPT Mini by [CoimgRain](https://github.com/CoimgRain)**: [CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini). This project is independent and is not endorsed by either upstream project.
-
-The GPT Mini-derived/reference portions are source-available for personal, educational, research, evaluation, and other non-commercial use only. Forking, modification, and continued public redistribution are permitted only while preserving the attribution and non-commercial restrictions. Commercial services, paid hosting, SaaS, relay services, paid deployment, resale of access, and other commercialization require prior written permission from CoimgRain. See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) and [LICENSE-CODEX-MINI](./LICENSE-CODEX-MINI).
-
-## Overview
-
-Snow App is a developer-focused desktop application that integrates AI-powered chat, terminal emulation, SSH remote management, Git tooling, and a built-in browser panel into a single unified workspace. It leverages a Rust native module for performance-critical operations such as SQLite storage, AI streaming, file watching, and HTTP requests.
-
-<img width="1525" height="1058" alt="image" src="https://github.com/user-attachments/assets/343e09f8-e085-4a2b-99ca-011e244460f0" />
-
-
-## Features
-
-- **AI Chat** - Streaming AI assistant with markdown rendering, syntax highlighting, and configurable system prompts
-- **Integrated Terminal** - Full PTY-based terminal emulation powered by node-pty and xterm.js
-- **SSH Management** - Connect to and manage remote servers via SSH with credential persistence
-- **Git Panel** - Visual Git diff viewer and repository management
-- **Browser Panel** - Built-in browser with proxy support, network inspection, login-state management, and AI-driven automation
-- **MCP Support** - Model Context Protocol integration for extensible AI tooling
-- **AI Image Generation** - Built-in text-to-image / image editing (OpenAI / Gemini multi-channel); generated images are persisted into an image library
-- **Skills System** - Install / enable / manage AI skills (SKILL.md) that dynamically extend the agent
-- **Hooks** - Lifecycle hooks that run custom commands or prompts before/after events like requests and compression
-- **Sub-Agents** - Independent AI execution loops for parallel, complex multi-step tasks
-- **Codebase Semantic Search** - Embedding-index-based code search plus multi-language code symbol location (codelens)
-- **Plan / Goal Modes** - Plan-first and autonomous long-running task execution modes
-- **Interactive Terminal Sessions** - The AI can drive persistent PTY sessions for long-running and interactive commands
-- **Codebase Explorer** - Project file tree with workspace directory management
-- **Config Import** - Import MCP servers, skills, plugins, and prompts from Codex / WSL / SSH environments
-- **i18n** - Multi-language support with a locale system
-- **Settings Management** - Granular configuration for API keys, custom headers, proxy, sensitive commands, and more
-- **Cross-Platform** - Runs on macOS, Windows, and Linux
-- **Mobile Remote Control** - Secure pairing, conversation control, attachments, action panels, theme support, and self-hosted FRP deployment support
-
-## Tech Stack
-
-| Layer     | Technology                                    |
-| --------- | --------------------------------------------- |
-| Shell     | Electron 37                                   |
-| Frontend  | React 19, TypeScript 5.9                      |
-| Bundler   | electron-vite 4 (Vite 7)                        |
-| Native    | Rust 2021 Edition (napi-rs 3)                 |
-| Packaging | electron-builder 26                           |
-| Terminal  | node-pty, xterm.js 6                          |
-| SSH       | ssh2                                          |
-| Storage   | rusqlite (SQLite, bundled)                    |
-| AI/HTTP   | reqwest (multi-provider protocol adapters and streaming HTTP) |
-| Markdown  | markdown-it, streaming-markdown, highlight.js |
-| Icons     | lucide-react                                  |
-
-## Project Structure
-
-```
-snow-app/
-├── src/
-│   ├── main/            # Electron main process
-│   │   ├── app/         # Application bootstrap & window management
-│   │   ├── codex/       # Codex compatibility import layer
-│   │   │   └── importer.ts # Manual settings import for MCP, Skills, Plugins, and prompts
-│   │   ├── importConfig/ # Third-party config import (reversible transaction + environment discovery)
-│   │   ├── ipc/         # IPC handler registration
-│   │   ├── native/      # Rust native bridge (storageReady gate)
-│   │   ├── notification/ # System notifications
-│   │   ├── plugins/     # Plugin runtime (isolated workers)
-│   │   ├── pty/         # PTY & terminal management
-│   │   ├── settings/    # Configuration stores
-│   │   ├── snowCli/     # CLI path & profile management
-│   │   ├── ssh/         # SSH connection management
-│   │   ├── types/       # Shared types
-│   │   ├── updater/     # App updates
-│   │   └── utils/       # Shared utilities
-│   ├── preload/         # Electron preload script (window.snow.* allowlist)
-│   ├── renderer/        # React frontend
-│   │   ├── components/  # UI components (sidebar, main content, right panel)
-│   │   ├── hooks/       # Custom React hooks
-│   │   ├── i18n/        # Internationalization
-│   │   └── utils/       # Frontend utilities
-│   └── shared/          # Code shared between main & renderer
-├── native/              # Rust native module
-│   └── src/
-│       ├── api/         # AI API integration
-│       ├── exports/     # napi-rs export bindings
-│       ├── hooks/       # Lifecycle hook execution
-│       ├── mcp/         # MCP protocol implementation (built-in servers + external client)
-│       ├── prompt/      # System prompt handling (incl. Plan/Goal modes)
-│       └── storage/     # SQLite persistence
-├── scripts/             # Build & utility scripts
-├── resources/           # App icons & static assets
-└── electron.vite.config.ts
+```text
+手机浏览器
+  → 配对链接 / 一次性凭据
+Snow App 内置 HTTP 服务
+  → Renderer 安全桥
+电脑上的真实 Snow 会话
 ```
 
-Codex compatibility imports are started manually from the Codex compatibility
-entry in Settings; the app does not synchronize Codex files during startup.
+它不是另一个聊天机器人，也不是把数据库复制到云端。电脑仍负责模型请求、工具执行、项目文件、终端和凭据存储；手机只通过受限接口控制当前 Snow。
 
-## Prerequisites
+## 手机端可以做什么
 
-- **Node.js** >= 18
-- **Rust** (stable toolchain) - required for building the native module
-- **Cargo** - comes with Rust
+- 查看当前工作区、会话、消息、思考过程和工具执行状态
+- 新建、切换、重命名、置顶和归档会话
+- 发送消息、停止生成、上传图片和普通文件
+- 切换模型、Profile、推理强度、Fast Mode
+- 切换 Plan、Goal、Worktree、Workflow 和 YOLO 等已有模式
+- 处理真实的工具授权与 `askUserQuestion`
+- 查看 Skills、MCP、权限、角色、代码变更和审查摘要
+- 使用适配手机、横屏、软键盘及日间/夜间主题的界面
 
-### Platform-Specific
+桌面专属或高风险操作仍遵守 Snow 原有确认规则；手机端不会伪造成功或绕过敏感命令确认。
 
-- **macOS**: Xcode Command Line Tools
-- **Windows**: Visual Studio Build Tools (C++ workload)
-- **Linux**: `build-essential`, `pkg-config`, and system SQLite (or use bundled)
+## 两种连接方式
 
-## Getting Started
+### 同一 Wi-Fi：扫码即用
 
-### Installation
+1. 在电脑上启动 Snow App。
+2. 打开设置中的“手机远控”。
+3. 保持手机与电脑处于同一可信局域网。
+4. 扫描页面二维码，或把局域网地址复制到手机浏览器。
 
-```bash
+这种方式不需要公网服务器、域名、CDN 或额外证书。
+
+### 外网访问：自建 FRP + HTTPS
+
+设置页提供“四步公网部署”流程。你需要：
+
+- 一台具有独立公网 IPv4 的 Linux 服务器；
+- 一个自己的域名；
+- 服务器的 SSH 登录凭据。
+
+Snow 会部署并校验 FRP/Caddy 配置，电脑端只把专用本机监听端口交给内置 `frpc`。配置只有验证成功后才会通过系统安全存储加密保存。
+
+项目不提供公共中转服务，也不会代收你的 Snow 凭据。
+
+## 安全边界
+
+- 至少 24 字节高熵凭据与一次性配对流程
+- Header、查询参数和 HttpOnly Cookie 鉴权
+- 查询参数建立 Cookie 后自动从地址栏移除
+- 请求体大小、Content-Type、会话和 pending ID 校验
+- 无宽泛 CORS，不开放 Electron/CDP 调试端口
+- 工具参数、结果、日志和角色摘要做长度限制与凭据脱敏
+- 手机接口不直接读取 SQLite，不返回 API Key、Cookie、SSH 密码或完整环境变量
+- 可随时“轮换凭据”，立即撤销已配对手机和待发送附件
+
+公网使用时请只使用自己控制的服务器和 HTTPS 域名。
+
+## Windows 安装
+
+当前发布提供 Windows x64：
+
+- `Snow.App.Setup.<version>.exe`：安装版
+- `Snow.App.<version>.exe`：免安装便携版
+
+从 [GitHub Releases](https://github.com/zerio1/snowapp-/releases) 下载。安装版会以管理员权限升级现有的全用户 Snow 安装，并先请求旧进程完成清理退出。
+
+当前构建没有商业 Authenticode 证书。Windows 出现信誉提示时，请确认下载来源为本仓库，并对照 Release 中公布的 SHA-256。
+
+如果历史版本仍阻止升级，可先在系统托盘右键 Snow App →“退出”，再重新运行安装器；不要直接删除安装目录或用户数据。
+
+## 从源码运行
+
+环境要求：
+
+- Node.js 18 或更高版本
+- Rust stable 与 Cargo
+- Windows 构建需要 Visual Studio Build Tools 的 C++ 工作负载
+
+```powershell
 npm install
-```
-
-### Development
-
-```bash
 npm run dev
 ```
 
-This starts the Electron app in development mode with hot module replacement.
+检查与 Windows 打包：
 
-### Build
-
-```bash
-npm run build
-```
-
-This compiles the Rust native module and bundles the Electron application via electron-vite.
-
-### Package for Windows
-
-```bash
+```powershell
+npm run check
+npm run check:docs
+npm run check:mobile
+npm run test:remote-control
 npm run build:win
 ```
 
-This builds the app and produces NSIS and portable packages via electron-builder. Output is written to `dist/`.
+打包结果位于 `dist/`。构建白名单不会包含 `native/target`、本机 `.snow` 状态或用户数据库。
 
-### Type Checking
+## 项目来源与使用限制
 
-```bash
-npm run check
-```
+本仓库基于 [MayDay-wpf/snow-app](https://github.com/MayDay-wpf/snow-app) 继续开发，保留 Snow App 上游的 MIT 许可。手机远控产品体验参考并复现了 **GPT Mini by [CoimgRain](https://github.com/CoimgRain)**：[CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。本项目为独立衍生项目，不代表上游官方合作或背书。
 
-Runs both TypeScript type checking (`tsc --noEmit`) and Rust checking (`cargo check`).
+> **重要非商业声明：** GPT Mini 仅允许个人、学习、研究、评估等非商业用途使用。允许 fork、修改和继续公开发布，但必须保留对原项目和作者的清晰署名：**GPT Mini by [CoimgRain](https://github.com/CoimgRain)**，并附上原项目链接：[https://github.com/CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。未经作者事先书面授权，不得用于商业服务、付费托管、SaaS、中转服务、代部署收费、转售访问权或其他商业化用途。
 
-## Available Scripts
-
-| Script               | Description                            |
-| -------------------- | -------------------------------------- |
-| `npm run dev`        | Start development server with HMR      |
-| `npm run build`      | Build Rust native module + Vite bundle |
-| `npm run build:win`  | Build + create Windows packages        |
-| `npm run build:rust` | Build only the Rust native module      |
-| `npm run check`      | TypeScript + Rust type checking        |
-| `npm run check:ts`   | TypeScript type checking only          |
-| `npm run preview`    | Preview the production build           |
-
-## Native Module
-
-The Rust native module (`snow_native`) is compiled to a Node addon (`.node`) via napi-rs. It provides:
-
-- **AI API streaming** - Async streaming via reqwest and provider adapters for OpenAI Chat/Responses, Anthropic, and Gemini protocols
-- **SQLite storage** - Embedded database via rusqlite for settings and chat history
-- **File watching** - File system monitoring via the `notify` crate
-- **HTTP client** - Full-featured HTTP client via reqwest with compression support
-- **MCP protocol** - Model Context Protocol implementation
-
-## Friendly links
-
-* [Linux DO](https://linux.do)
-
-## Licenses
-
-- The Snow App upstream code remains under the [MIT License](./LICENSE), Copyright (c) 2026 MayMay.
-- GPT Mini-derived/reference portions are subject to the [Codex Mini Source-Available Non-Commercial License 1.0](./LICENSE-CODEX-MINI), Copyright (c) 2026 CoimgRain and Codex Mini contributors.
-- Attribution details and the required Chinese notice are in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
+完整条款见 [LICENSE](./LICENSE)、[LICENSE-CODEX-MINI](./LICENSE-CODEX-MINI) 和 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。

@@ -1,193 +1,181 @@
-# Snow App
+# Snow App 手机远控版：完整说明
 
-> [!WARNING] > **macOS 用户注意：** 如果安装后打开时提示"已损坏"或"无法打开"，请在终端执行以下命令：
->
-> ```bash
-> sudo xattr -rd com.apple.quarantine /Applications/Snow\ App.app
-> ```
->
-> 执行后按回车输入锁屏密码，以解除隔离属性。
+[返回项目首页](./README.md) · [下载最新版](https://github.com/zerio1/snowapp-/releases/latest) · [公网部署指南](./docs/zh-CN/2-使用指南/23-手机公网远控.md)
 
-> 基于 Electron、React、TypeScript 和 Rust 构建的高性能跨平台桌面应用。
+## 产品定位
 
-[English](./README.md)
+这是 Snow App 的手机远控版本。电脑继续运行真实 Snow 会话，手机浏览器只通过受限接口查看状态并发出操作：
 
-## 项目来源与使用限制
+- 不需要安装 APK 或 iOS App；
+- 不把 Snow 数据库、聊天记录或 API Key同步到第三方云服务；
+- 局域网可以直接扫码；
+- 离开同一 Wi-Fi 时，可以通过自己的 Linux 服务器、FRP 和 HTTPS 域名连接。
 
-本仓库是在 [MayDay-wpf/snow-app](https://github.com/MayDay-wpf/snow-app) 的 MIT 许可架构上继续开发的 Snow App 衍生版本。手机远控体验参考并复现了 **GPT Mini by [CoimgRain](https://github.com/CoimgRain)**：[CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。本项目为独立衍生项目，不代表两个上游项目的官方合作或背书。
+手机页面面向实际使用重新设计，不是桌面页面的缩小截图。它包含适合单手操作的会话选择、消息时间线、组合输入、附件、底部操作菜单、交互卡和主题系统。
 
-> **重要非商业声明：** GPT Mini 仅允许个人、学习、研究、评估等非商业用途使用。允许 fork、修改和继续公开发布，但必须保留对原项目和作者的清晰署名：**GPT Mini by [CoimgRain](https://github.com/CoimgRain)**，并附上原项目链接：[https://github.com/CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。未经作者事先书面授权，不得用于商业服务、付费托管、SaaS、中转服务、代部署收费、转售访问权或其他商业化用途。
+## 手机远控能力
 
-完整说明见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) 和 [LICENSE-CODEX-MINI](./LICENSE-CODEX-MINI)。
+### 对话
 
-## 项目简介
+- 查看当前工作区和真实会话消息
+- 查看 Markdown、代码块、表格、引用、图片、文件和工具时间线
+- 发送文字、图片与普通文件
+- 停止正在生成的回复
+- 在阅读历史时保持当前位置，并提示新消息
+- 新建、切换、重命名、置顶和归档会话
 
-Snow App 是一款面向开发者的桌面应用，将 AI 对话、终端模拟、SSH 远程管理、Git 工具和内置浏览器面板整合到统一的工作空间中。它通过 Rust 原生模块处理性能关键型操作，包括 SQLite 存储、AI 流式传输、文件监控和 HTTP 请求。
+### 模型与工作模式
 
-<img width="1525" height="1058" alt="image" src="https://github.com/user-attachments/assets/48410803-4cde-41a6-a99b-26c446f86740" />
+- 模型和 Profile
+- 推理强度与 Responses Fast Mode
+- Plan、Goal、Worktree、Workflow、YOLO
+- 上下文与 Token 使用摘要
+- Snow 已注册的真实命令面板
 
+### 设置与交互
 
-## 功能特性
+- Skills 列表、搜索、详情和启停
+- MCP 状态
+- 权限、角色、代码变更、审查与代码库摘要
+- 真实工具授权
+- `askUserQuestion` 选项、自定义回答和取消
+- 日间、夜间、跟随系统主题
+- 窄屏、横屏、软键盘、安全区和中文组合输入适配
 
-- **AI 对话** - 流式 AI 助手，支持 Markdown 渲染、语法高亮和可配置的系统提示词
-- **集成终端** - 基于 node-pty 和 xterm.js 的全功能 PTY 终端模拟
-- **SSH 管理** - 通过 SSH 连接并管理远程服务器，支持凭据持久化
-- **Git 面板** - 可视化 Git 差异查看器和仓库管理
-- **浏览器面板** - 内置浏览器，支持代理、网络检查与登录态管理，可供 AI 自动化操作
-- **MCP 支持** - 模型上下文协议（Model Context Protocol）集成，可扩展 AI 工具
-- **AI 图像生成** - 内置文生图/图生图编辑（OpenAI / Gemini 多渠道），生成图片自动存入图像库
-- **Skills 技能系统** - 安装/启用/管理 AI 技能（Skill），动态扩展 agent 能力
-- **Hooks 生命周期钩子** - 在请求、压缩等事件前后执行自定义命令或提示词
-- **子代理** - 独立 AI 执行循环，并行处理复杂多步任务
-- **代码库语义搜索** - 基于嵌入索引的代码搜索与多语言代码符号定位（codelens）
-- **Plan / Goal 模式** - 计划先行（Plan）与自主长任务执行（Goal）两种工作模式
-- **终端交互会话** - AI 可驱动持久 PTY 会话，运行长驻进程与交互式命令
-- **代码库浏览器** - 项目文件树，支持工作区目录管理
-- **配置导入** - 从 Codex / WSL / SSH 等环境导入 MCP、Skills、插件与提示词
-- **国际化** - 多语言支持，内置语言包系统
-- **设置管理** - 细粒度配置，涵盖 API 密钥、自定义请求头、代理、敏感命令等
-- **跨平台** - 支持 macOS、Windows 和 Linux
-- **手机远程控制** - 支持安全配对、会话控制、附件、操作面板、主题切换和自建 FRP 部署
+涉及桌面专属能力或敏感命令时，Snow 仍会保持原有安全确认，不会因为手机远控而自动放行。
 
-## 技术栈
+## 局域网使用
 
-| 层级     | 技术                                          |
-| -------- | --------------------------------------------- |
-| 外壳     | Electron 37                                   |
-| 前端     | React 19, TypeScript 5.9                      |
-| 打包器   | electron-vite 4 (Vite 7)                       |
-| 原生模块 | Rust 2021 Edition (napi-rs 3)                 |
-| 应用打包 | electron-builder 26                           |
-| 终端     | node-pty, xterm.js 6                          |
-| SSH      | ssh2                                          |
-| 存储     | rusqlite (SQLite, 内置)                       |
-| AI/HTTP  | reqwest（多供应商协议适配与流式 HTTP）        |
-| Markdown | markdown-it, streaming-markdown, highlight.js |
-| 图标     | lucide-react                                  |
+1. 启动电脑端 Snow App。
+2. 打开设置 →“手机远控”。
+3. 页面显示“正在监听”和配对二维码后，让手机连接同一可信 Wi-Fi。
+4. 扫码，或点击“复制地址”后发送到自己的手机。
+5. 首次访问建立 HttpOnly 配对 Cookie 后，地址栏中的临时凭据会自动清除。
 
-## 项目结构
+如果手机打不开：
 
-```
-snow-app/
-├── src/
-│   ├── main/            # Electron 主进程
-│   │   ├── app/         # 应用引导与窗口管理
-│   │   ├── codex/       # Codex 兼容层
-│   │   │   └── importer.ts # 设置页手动导入 MCP、Skills、Plugins 与提示词
-│   │   ├── importConfig/ # 第三方配置导入（可逆事务 + 环境发现）
-│   │   ├── ipc/         # IPC 处理器注册
-│   │   ├── native/      # Rust 原生桥接（storageReady 门控）
-│   │   ├── notification/ # 系统通知
-│   │   ├── plugins/     # 插件运行时（worker 隔离）
-│   │   ├── pty/         # PTY 与终端管理
-│   │   ├── settings/    # 配置存储
-│   │   ├── snowCli/     # CLI 路径与配置文件管理
-│   │   ├── ssh/         # SSH 连接管理
-│   │   ├── types/       # 共享类型
-│   │   ├── updater/     # 应用更新
-│   │   └── utils/       # 共享工具函数
-│   ├── preload/         # Electron 预加载脚本（window.snow.* 白名单）
-│   ├── renderer/        # React 前端
-│   │   ├── components/  # UI 组件（侧边栏、主内容区、右侧面板）
-│   │   ├── hooks/       # 自定义 React Hooks
-│   │   ├── i18n/        # 国际化
-│   │   └── utils/       # 前端工具函数
-│   └── shared/          # 前后端共享代码
-├── native/              # Rust 原生模块
-│   └── src/
-│       ├── api/         # AI API 集成
-│       ├── exports/     # napi-rs 导出绑定
-│       ├── hooks/       # 生命周期钩子执行
-│       ├── mcp/         # MCP 协议实现（内置服务器 + 外部客户端）
-│       ├── prompt/      # 系统提示词处理（含 Plan/Goal 模式）
-│       └── storage/     # SQLite 持久化
-├── scripts/             # 构建与工具脚本
-├── resources/           # 应用图标与静态资源
-└── electron.vite.config.ts
+- 确认 Snow App 仍在电脑上运行；
+- 确认两台设备在同一局域网且路由器没有开启客户端隔离；
+- 尝试设置页列出的另一个局域网地址；
+- 不要把带配对凭据的完整地址公开发送给他人。
+
+## 公网使用
+
+只在离开同一 Wi-Fi 后仍需控制 Snow 时配置公网入口。
+
+准备：
+
+- Ubuntu 22.04/24.04、x86_64、独立公网 IPv4 的 Linux 服务器；
+- 一个自己的域名；
+- 可登录该服务器的 SSH 凭据。
+
+设置页的“第一次公网部署”会引导完成：
+
+1. 检查服务器和域名；
+2. 生成固定子域名及 DNS 配置；
+3. 部署固定版本的 FRP 与 Caddy；
+4. 导入客户端配置并验证 HTTPS。
+
+安装包内置 `frpc 0.71.0`，启动前会验证版本、文件大小和 SHA-256。FRP 数据端口只绑定服务器回环地址；外部访问通过 HTTPS 入口。配置验证失败时不会保存凭据，成功后才使用系统安全存储加密保存。
+
+本项目不提供公共代理、中转服务、SaaS 或付费托管。
+
+## 安全设计
+
+```text
+手机浏览器
+  └─ HTTPS 或可信 LAN + 高熵配对凭据
+      └─ Snow Main 内置最小 HTTP 服务
+          └─ Renderer RemoteControlBridge
+              └─ Snow 现有会话 Hook
 ```
 
-Codex 兼容层只能从设置页手动执行导入，应用启动时不会自动同步 Codex 文件。
+- 默认生成至少 24 字节高熵凭据
+- 一次性配对码、会话有效期、失败次数限制和撤销
+- HttpOnly、SameSite Cookie；公网 Cookie 同时要求 Secure
+- 无宽泛 CORS，CSP 与 `X-Frame-Options: DENY`
+- 请求体和字段长度限制
+- 活动会话、工作区、授权 ID、问题 ID 和 pending map 校验
+- 图片魔数/MIME 检查、安全文件名和每会话附件数量限制
+- 工具参数、输出、错误、角色和配置摘要经过限长与脱敏
+- 不开放 CDP，不直接解析 Snow SQLite
+- 不向手机返回 API Key、SSH 密码、Cookie、私钥、完整环境变量或内部堆栈
 
-## 环境要求
+点击“轮换凭据”后，已配对手机、旧链接和未发送附件会立即失效。
 
-- **Node.js** >= 18
-- **Rust**（stable 工具链）- 用于构建原生模块
-- **Cargo** - 随 Rust 一起安装
+## 安装与升级
 
-### 平台特定要求
+在 [Releases](https://github.com/zerio1/snowapp-/releases) 下载 Windows x64 安装版或便携版。
 
-- **macOS**: Xcode Command Line Tools
-- **Windows**: Visual Studio Build Tools（C++ 工作负载）
-- **Linux**: `build-essential`、`pkg-config` 和系统级 SQLite（或使用内置版本）
+### 安装版
 
-## 快速开始
+`Snow.App.Setup.<version>.exe`
 
-### 安装依赖
+- 使用管理员权限安装和升级全用户 Snow App；
+- 升级前通过单实例信号请求旧 Snow 清理终端、远控服务和 FRP 后退出；
+- 对不支持该信号的旧版本，安装器仍保留系统级关闭兼容处理；
+- 保留应用用户数据，不通过升级删除会话和设置。
 
-```bash
+### 便携版
+
+`Snow.App.<version>.exe`
+
+无需安装，适合临时测试。不要让安装版和便携版同时运行，否则单实例锁只会保留其中一个。
+
+### Windows 安全提示
+
+当前公开构建未购买商业 Authenticode 证书。请只从本仓库 Release 下载，并核对发布说明中的 SHA-256。
+
+若非常旧的安装仍提示无法关闭：
+
+1. 在系统托盘右键 Snow App；
+2. 选择“退出”，而不是只关闭窗口；
+3. 确认任务管理器中没有 `Snow App.exe`；
+4. 重新运行新版安装器。
+
+不要直接删除 `D:\snowapp\Snow App` 或用户数据目录来处理升级错误。
+
+## 源码开发
+
+环境：
+
+- Node.js 18+
+- Rust stable 与 Cargo
+- Windows：Visual Studio Build Tools C++ 工作负载
+
+```powershell
 npm install
-```
-
-### 开发模式
-
-```bash
 npm run dev
 ```
 
-以开发模式启动 Electron 应用，支持热模块替换（HMR）。
+验证：
 
-### 构建
-
-```bash
-npm run build
+```powershell
+npm run check
+npm run check:docs
+npm run check:mobile
+npm run test:remote-control
+node --test --experimental-strip-types scripts/installer-upgrade.test.ts
 ```
 
-编译 Rust 原生模块并通过 electron-vite 打包 Electron 应用。
+Windows 打包：
 
-### Windows 打包
-
-```bash
+```powershell
 npm run build:win
 ```
 
-构建应用并通过 electron-builder 生成 NSIS 安装包和便携版，输出目录为 `dist/`。
+产物位于 `dist/`。打包白名单明确排除 `native/target`、`.snow`、用户数据库、临时日志和历史发布目录。
 
-### 类型检查
+## 上游项目、署名与许可
 
-```bash
-npm run check
-```
+本仓库在 [MayDay-wpf/snow-app](https://github.com/MayDay-wpf/snow-app) 的 MIT 许可代码基础上继续开发。
 
-同时执行 TypeScript 类型检查（`tsc --noEmit`）和 Rust 检查（`cargo check`）。
+手机远控产品体验参考并复现了 **GPT Mini by [CoimgRain](https://github.com/CoimgRain)**，原项目：[https://github.com/CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。本项目为独立衍生项目，不代表任何上游项目的官方合作或背书。
 
-## 可用脚本
+> **重要非商业声明：** GPT Mini 仅允许个人、学习、研究、评估等非商业用途使用。允许 fork、修改和继续公开发布，但必须保留对原项目和作者的清晰署名：**GPT Mini by [CoimgRain](https://github.com/CoimgRain)**，并附上原项目链接：[https://github.com/CoimgRain/Codex-Mini](https://github.com/CoimgRain/Codex-Mini)。未经作者事先书面授权，不得用于商业服务、付费托管、SaaS、中转服务、代部署收费、转售访问权或其他商业化用途。
 
-| 脚本                 | 说明                           |
-| -------------------- | ------------------------------ |
-| `npm run dev`        | 启动开发服务器（支持 HMR）     |
-| `npm run build`      | 构建 Rust 原生模块 + Vite 打包 |
-| `npm run build:win`  | 构建 + 生成 Windows 可分发包    |
-| `npm run build:rust` | 仅构建 Rust 原生模块           |
-| `npm run check`      | TypeScript + Rust 类型检查     |
-| `npm run check:ts`   | 仅 TypeScript 类型检查         |
-| `npm run preview`    | 预览生产构建                   |
+许可证文件：
 
-## 原生模块
-
-Rust 原生模块（`snow_native`）通过 napi-rs 编译为 Node 插件（`.node`），提供以下能力：
-
-- **AI API 流式传输** - 通过 reqwest 和供应商协议适配层实现异步流式响应，统一支持 OpenAI Chat/Responses、Anthropic 与 Gemini 协议
-- **SQLite 存储** - 通过 rusqlite 嵌入式数据库，用于存储设置和聊天记录
-- **文件监控** - 通过 `notify` crate 实现文件系统监听
-- **HTTP 客户端** - 通过 reqwest 实现全功能 HTTP 客户端，支持压缩
-- **MCP 协议** - 模型上下文协议实现
-
-## 友情链接
-
-* [Linux DO](https://linux.do)
-
-## 许可证
-
-- Snow App 上游代码继续采用 [MIT License](./LICENSE)，Copyright (c) 2026 MayMay。
-- 参考/复现 GPT Mini 的部分受 [Codex Mini Source-Available Non-Commercial License 1.0](./LICENSE-CODEX-MINI) 约束，Copyright (c) 2026 CoimgRain and Codex Mini contributors。
-- 署名、来源与中文非商业声明详见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
+- [Snow App 上游 MIT License](./LICENSE)
+- [Codex Mini Source-Available Non-Commercial License 1.0](./LICENSE-CODEX-MINI)
+- [第三方署名与中文声明](./THIRD_PARTY_NOTICES.md)

@@ -1,7 +1,7 @@
 {
   "name": "snow-app",
-  "version": "0.2.40",
-  "description": "Snow App The best AI Agent client in the universe",
+  "version": "0.2.41",
+  "description": "Control your real Snow AI sessions from a phone browser",
   "author": {
     "name": "Mufasa",
     "email": "mufasa@snow.app"
@@ -87,6 +87,6 @@
     "asarUnpack": ["native/**/*.node"],
     "extraResources": [{"from": "resources/remote-control/frp/win32-x64", "to": "remote-control/frp/win32-x64"}, {"from": "deploy/remote-control", "to": "remote-control/deploy"}],
     "win": {"target": [{"target": "nsis", "arch": ["x64"]}, {"target": "portable", "arch": ["x64"]}]},
-    "nsis": {"oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true}
+    "nsis": {"oneClick": false, "perMachine": true, "allowToChangeInstallationDirectory": true, "include": "build/installer.nsh"}
   }
 }

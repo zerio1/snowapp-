@@ -108,6 +108,37 @@ const stopPackagedSmokeTree = () => {
   }
 };
 
+const verifyInstallerQuitHandshake = async () => {
+  if (!packagedExecutable || process.platform !== "win32") return false;
+
+  const quitRequester = spawn(
+    executable,
+    [userDataArgument, "--quit-for-update"],
+    {
+      cwd: root,
+      env: process.env,
+      stdio: "ignore",
+      windowsHide: true,
+    },
+  );
+
+  let portReleased = false;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      await request("/api/state", {
+        headers: { "x-snow-remote-token": token },
+      });
+    } catch {
+      portReleased = true;
+      break;
+    }
+    await wait(250);
+  }
+
+  if (quitRequester.exitCode === null) quitRequester.kill();
+  return portReleased;
+};
+
 try {
   let state;
   let stableContext = "";
@@ -620,6 +651,8 @@ try {
     }
   }
 
+  const installerQuitQa = await verifyInstallerQuitHandshake();
+
   console.log(
     [
       "STATE=" + state.status,
@@ -651,10 +684,11 @@ try {
       "MOBILE_UI_BEHAVIOR=" + mobileUiBehavior,
       "VIEWPORT_QA=" + (typeof viewportQaPassed === "boolean" ? viewportQaPassed : false),
       "VIEWPORT_QA_DETAILS=" + JSON.stringify(viewportChecks ?? []),
+      "INSTALLER_QUIT_QA=" + installerQuitQa,
     ].join(" "),
   );
 } finally {
-  child.kill();
+  if (child.exitCode === null) child.kill();
   stopPackagedSmokeTree();
   await wait(1500);
   console.log("CHILD_EXITED=" + (child.exitCode !== null || child.killed));
