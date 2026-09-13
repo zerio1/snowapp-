@@ -1,4 +1,4 @@
-# Snow App 手机远控版 0.2.41 发布说明
+# Snow App 手机远控版 0.2.42 发布说明
 
 ## 这是什么
 
@@ -6,14 +6,19 @@
 
 手机端支持查看和继续会话、发送文字/图片/文件、切换模型和推理强度、停止生成，以及使用会话、项目、Skills、MCP、权限、角色、审查和变更摘要等面板。远控使用高熵令牌鉴权，不会创建一套与电脑割裂的聊天数据。
 
-## 0.2.41 修复
+<p align="center">
+  <img src="https://raw.githubusercontent.com/zerio1/snowapp-/v0.2.42/docs/images/mobile-conversation.png" width="360" alt="手机浏览器中的 Snow 真实会话" />
+  <img src="https://raw.githubusercontent.com/zerio1/snowapp-/v0.2.42/docs/images/mobile-actions.png" width="360" alt="手机远控操作与功能面板" />
+</p>
 
-- 修复从旧版全用户安装升级时，安装器可能提示 Snow App 无法关闭或 `Failed to uninstall old application files ... : 2` 的问题。
-- 安装包统一为 Windows 全用户安装，匹配既有安装记录与卸载器权限。
-- 安装器升级前会通过专用参数请求正在运行的 Snow App 正常退出；程序会跳过普通关窗确认并执行已有清理流程。
-- 保留 electron-builder 的进程检查和旧版卸载回退路径。
-- 仓库首页和发布文案改为以“手机远控真实会话”为核心。
-- 版本提升至 `0.2.41`。
+## 0.2.42 修复
+
+- 修正 0.2.41 仍可能停在“Snow App 无法关闭”的升级流程。
+- 安装器恢复“仅为我安装 / 为所有用户安装”选择页；新安装默认仅当前用户，不主动索取管理员权限。
+- 只有主动选择所有用户或升级既有全用户安装时才请求管理员权限。
+- 新版先通过专用参数正常清理退出；不支持该参数的旧版会被限定在安装目录内自动关闭，并轮询等待最多 15 秒，避免进程已经退出却仍显示错误。
+- README 与 Release 加入实际打包页面生成的手机会话和功能菜单截图。
+- 版本提升至 `0.2.42`。
 
 ## 使用入口
 
@@ -34,12 +39,12 @@
 
 ## Windows 下载
 
-Git 仓库只提交源码；以下文件作为 GitHub Release `v0.2.41` 附件提供：
+Git 仓库只提交源码；以下文件作为 GitHub Release `v0.2.42` 附件提供：
 
 | 文件 | 字节数 | SHA-256 |
 | --- | ---: | --- |
-| `Snow App Setup 0.2.41.exe` | 185,871,262 | `ec48eaa68907164415ed5f6a4cd52f0f29528872720cc3d2932f446f9b89505a` |
-| `Snow App 0.2.41.exe` | 185,654,692 | `ea2c517fa4732d5a0a0befae68e2f50d163ab3bd8536f3c425fe9af88c268f36` |
+| `Snow App Setup 0.2.42.exe` | 185,885,534 | `cc84675677ff1cab75c2b7ab792cb8328ba45017a7ec1def246728a4493738c1` |
+| `Snow App 0.2.42.exe` | 185,657,112 | `d3a6107c0ce23baa2fe85231b606f5bb82bc64ed237a31f0469b357f16dd6e44` |
 
 `Setup` 是安装版，另一个是便携版。两个文件当前均未进行 Authenticode 商业代码签名，请只从本仓库 Release 下载并核对 SHA-256。
 
@@ -48,7 +53,7 @@ Git 仓库只提交源码；以下文件作为 GitHub Release `v0.2.41` 附件�
 - 安装器升级回归测试：2/2 通过。
 - TypeScript 检查、移动资源检查和文档检查全部通过。
 - 手机远控测试：35/35 通过。
-- Windows 完整构建成功；NSIS 明确以 `perMachine=true` 生成安装包。
+- Windows 完整构建成功；NSIS 明确以 `oneClick=false perMachine=false` 生成带安装范围选择页的安装包。
 - `win-unpacked` 隔离生产 smoke 通过：鉴权、附件、幂等发送、手机布局、菜单、主题、焦点及管理面板均正常。
 - 安装器专用退出握手在真实打包程序上通过，主程序退出并释放远控端口。
 - 视口：320×568、390×844、844×390、1100×760 均无横向溢出，11 个操作菜单项全部可命中，横屏菜单可滚动。
@@ -58,4 +63,4 @@ Git 仓库只提交源码；以下文件作为 GitHub Release `v0.2.41` 附件�
 ## 已知环境限制
 
 - 当前 Windows 文件未做商业代码签名，首次运行可能出现 SmartScreen 提示。
-- 为避免触碰本机真实安装和用户数据，自动验证使用独立临时配置；现有 `D:\snowapp\Snow App` 的原地升级需要下载者用 0.2.41 安装包完成最终确认。
+- 为避免触碰本机真实安装和用户数据，自动验证使用独立临时配置；现有 `D:\snowapp\Snow App` 的原地升级需要下载者用 0.2.42 安装包完成最终确认。

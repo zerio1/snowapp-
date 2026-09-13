@@ -2,6 +2,13 @@
 
 [返回项目首页](./README.md) · [下载最新版](https://github.com/zerio1/snowapp-/releases/latest) · [公网部署指南](./docs/zh-CN/2-使用指南/23-手机公网远控.md)
 
+<p align="center">
+  <img src="docs/images/mobile-conversation.png" width="360" alt="手机浏览器中的 Snow 真实会话" />
+  <img src="docs/images/mobile-actions.png" width="360" alt="手机远控操作与功能面板" />
+</p>
+
+<p align="center">手机端真实界面：会话正文与完整功能菜单</p>
+
 ## 产品定位
 
 这是 Snow App 的手机远控版本。电脑继续运行真实 Snow 会话，手机浏览器只通过受限接口查看状态并发出操作：
@@ -111,9 +118,9 @@
 
 `Snow.App.Setup.<version>.exe`
 
-- 使用管理员权限安装和升级全用户 Snow App；
-- 升级前通过单实例信号请求旧 Snow 清理终端、远控服务和 FRP 后退出；
-- 对不支持该信号的旧版本，安装器仍保留系统级关闭兼容处理；
+- 显示“仅为我安装 / 为所有用户安装”选择页；
+- 默认“仅为我安装”，不会主动请求管理员权限；只有选择所有用户时才提权；
+- 升级前先请求新版 Snow 正常清理退出，再自动关闭不支持该信号的旧版进程并等待最多 15 秒；
 - 保留应用用户数据，不通过升级删除会话和设置。
 
 ### 便携版

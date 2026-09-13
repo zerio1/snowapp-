@@ -4,15 +4,19 @@ import test from "node:test";
 
 const read = (path: string): string => readFileSync(path, "utf8");
 
-test("Windows installer upgrades the existing all-users installation", () => {
+test("Windows installer lets the user choose a safe installation scope", () => {
   const packageJson = JSON.parse(read("package.json"));
   const include = read("build/installer.nsh");
 
-  assert.equal(packageJson.build.nsis.perMachine, true);
+  assert.equal(packageJson.build.nsis.perMachine, false);
+  assert.equal(packageJson.build.nsis.selectPerMachineByDefault, false);
+  assert.equal(packageJson.build.nsis.allowElevation, true);
   assert.equal(packageJson.build.nsis.include, "build/installer.nsh");
-  assert.match(include, /!macro customInit/);
+  assert.match(include, /!macro customCheckAppRunning/);
   assert.match(include, /--quit-for-update/);
-  assert.match(include, /Exec\s/);
+  assert.match(include, /Stop-Process/);
+  assert.match(include, /AddSeconds\(15\)/);
+  assert.doesNotMatch(include, /!macro customInit/);
 });
 
 test("installer quit requests bypass the ordinary close confirmation", async () => {

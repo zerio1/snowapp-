@@ -1,6 +1,6 @@
 import { execFileSync, spawn } from "node:child_process";
 import crypto from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import puppeteer from "puppeteer-core";
@@ -9,6 +9,7 @@ const root = process.cwd();
 const token = crypto.randomBytes(32).toString("base64url");
 const port = Number(process.env.SNOW_SMOKE_PORT || 8797);
 const packagedExecutable = process.env.SNOW_SMOKE_EXECUTABLE;
+const screenshotDirectory = process.env.SNOW_SMOKE_SCREENSHOT_DIR;
 const executable =
   packagedExecutable ||
   path.join(root, "node_modules", "electron", "dist", "electron.exe");
@@ -612,11 +613,13 @@ try {
           { id: "fixture-error", role: "tool", content: "工具失败：<script>alert(1)</script>", timestamp: new Date().toISOString(), status: "error" },
         ],
       };
+      let servedFixture = fixture;
       const fixturePage = await browser.newPage();
+      await fixturePage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
       await fixturePage.setRequestInterception(true);
       fixturePage.on("request", (request) => {
         if (new URL(request.url()).pathname === "/api/state") {
-          void request.respond({ status: 200, contentType: "application/json", body: JSON.stringify(fixture) });
+          void request.respond({ status: 200, contentType: "application/json", body: JSON.stringify(servedFixture) });
         } else {
           void request.continue();
         }
@@ -631,6 +634,59 @@ try {
         escaped: !document.querySelector(".tool-card script"),
       }));
       p4ContentQa = Object.values(fixtureShape).every(Boolean);
+      if (screenshotDirectory) {
+        mkdirSync(screenshotDirectory, { recursive: true });
+        servedFixture = {
+          ...fixture,
+          chatInput: {
+            ...fixture.chatInput,
+            selectedModel: "gpt-5.6",
+            displayModel: "GPT-5.6",
+            thinkingValue: "high",
+          },
+          messages: [
+            {
+              id: "showcase-user",
+              role: "user",
+              content: "请检查项目状态，并总结这次手机远控修复。",
+              timestamp: new Date().toISOString(),
+              status: "sent",
+            },
+            {
+              id: "showcase-assistant",
+              role: "assistant",
+              model: "GPT-5.6",
+              thinking: "正在核对安装器、远控服务和移动页面……",
+              thinkingDurationMs: 1800,
+              timestamp: new Date().toISOString(),
+              status: "sent",
+              content: "## 检查完成\n\n- 手机浏览器可控制电脑上的真实 Snow 会话\n- 支持文字、图片和文件附件\n- 支持模型、推理强度、计划模式与权限面板\n- 局域网扫码即可连接，也支持自有域名 HTTPS\n\n> 会话仍保存在电脑端，手机无需安装额外 App。",
+              toolCalls: [],
+            },
+          ],
+        };
+        await fixturePage.evaluate(() => localStorage.setItem("snowRemoteTheme", "dark"));
+        await fixturePage.reload({ waitUntil: "domcontentloaded" });
+        await fixturePage.waitForFunction(
+          () => document.querySelectorAll(".message").length === 2,
+          { timeout: 5_000 },
+        );
+        await wait(300);
+        await fixturePage.screenshot({
+          path: path.join(screenshotDirectory, "mobile-conversation.png"),
+          fullPage: false,
+        });
+        await fixturePage.evaluate(() => document.querySelector("#plusButton")?.click());
+        await fixturePage.waitForFunction(
+          () => document.querySelector("#actionSheet")?.classList.contains("open"),
+          { timeout: 2_000 },
+        );
+        await fixturePage.evaluate(() => window.scrollTo(0, 0));
+        await fixturePage.screenshot({
+          path: path.join(screenshotDirectory, "mobile-actions.png"),
+          fullPage: false,
+        });
+      }
       await fixturePage.close();
       mobileUiBehavior =
         lightSelected.theme === "light" &&

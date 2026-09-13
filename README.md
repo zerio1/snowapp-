@@ -4,6 +4,13 @@
 
 [下载最新版](https://github.com/zerio1/snowapp-/releases/latest) · [中文完整说明](./README_zh.md) · [手机公网远控指南](./docs/zh-CN/2-使用指南/23-手机公网远控.md)
 
+<p align="center">
+  <img src="docs/images/mobile-conversation.png" width="360" alt="手机浏览器中的 Snow 真实会话" />
+  <img src="docs/images/mobile-actions.png" width="360" alt="手机远控操作与功能面板" />
+</p>
+
+<p align="center">真实手机页面：继续电脑会话 · 切换模式 · 打开 Skills、MCP、命令与模型面板</p>
+
 ## 这是什么
 
 Snow App 手机远控把桌面 Snow 已有的会话能力安全地延伸到手机浏览器：
@@ -74,7 +81,7 @@ Snow 会部署并校验 FRP/Caddy 配置，电脑端只把专用本机监听端�
 - `Snow.App.Setup.<version>.exe`：安装版
 - `Snow.App.<version>.exe`：免安装便携版
 
-从 [GitHub Releases](https://github.com/zerio1/snowapp-/releases) 下载。安装版会以管理员权限升级现有的全用户 Snow 安装，并先请求旧进程完成清理退出。
+从 [GitHub Releases](https://github.com/zerio1/snowapp-/releases) 下载。安装版会让你选择“仅为我安装”或“为所有用户安装”，默认选择前者且不需要管理员权限；只有主动选择所有用户时才会请求提权。升级时安装器会自动等待并关闭旧进程。
 
 当前构建没有商业 Authenticode 证书。Windows 出现信誉提示时，请确认下载来源为本仓库，并对照 Release 中公布的 SHA-256。
 
