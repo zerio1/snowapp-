@@ -1,10 +1,17 @@
 # Snow App 手机远控版
 
 > 在电脑上运行 Snow App，用手机浏览器安全地查看并操控同一个 AI 会话。无需安装手机 App；局域网扫码即用，也支持通过自己的服务器和域名建立 HTTPS 公网入口。
-使用方法: 下载安装后打开snowapp，点击设置选择 “手机远控”
-<img width="451" height="1254" alt="image" src="https://github.com/user-attachments/assets/56e188d1-d15f-4ea0-843b-900f22a10a64" />
-
+>
 > 
+使用方法: 下载安装后打开snowapp，点击设置选择 “手机远控”
+<img width="429" height="85" alt="image" src="https://github.com/user-attachments/assets/010cf3bc-0fbd-470e-b373-5cc4278b40da" />
+
+
+
+
+
+
+
 [下载最新版](https://github.com/zerio1/snowapp-/releases/latest) · [中文完整说明](./README_zh.md) · [手机公网远控指南](./docs/zh-CN/2-使用指南/23-手机公网远控.md)
 
 <p align="center">
